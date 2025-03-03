@@ -39,6 +39,7 @@ export class UsersService {
 
     await this.userRepository.save(usuarioSaved);
     console.log(await bcrypt.compare('MariaDaPenha.', passwordHash))
+    
     return usuarioSaved;
   }
 
