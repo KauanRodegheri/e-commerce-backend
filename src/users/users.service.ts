@@ -5,14 +5,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { PaginationDto } from 'src/commom/dto/pagination.dto';
-import { hash } from 'bcrypt';
-import * as bcrypt from 'bcrypt';
+import { HashingService } from 'src/auth/hashing/hashing.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly hashingService: HashingService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -23,12 +23,12 @@ export class UsersService {
       throw new BadRequestException('Email já cadastrado')
     };
 
+    const password = createUserDto.password
+    const passwordHash = await this.hashingService.hash(password)
+
     const usuario = {
       ...createUserDto,
     };
-
-    const passwordHash = await hash(usuario.password, 8)
-    console.log(passwordHash)
 
     const usuarioSaved = this.userRepository.create({
       name: usuario.name,
@@ -38,8 +38,7 @@ export class UsersService {
     });
 
     await this.userRepository.save(usuarioSaved);
-    console.log(await bcrypt.compare('MariaDaPenha.', passwordHash))
-    
+
     return usuarioSaved;
   }
 
@@ -105,9 +104,6 @@ export class UsersService {
       ? updateUserDto.username
       : usuario.username;
     usuario.email = updateUserDto.email ? updateUserDto.email : usuario.email
-    usuario.password = updateUserDto.password
-      ? updateUserDto.password
-      : usuario.password;
 
     await this.userRepository.save(usuario)
     return usuario;
